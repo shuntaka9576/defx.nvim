@@ -5,10 +5,14 @@
 # ============================================================================
 
 import typing
+from logging import getLogger
 
 from defx.clipboard import Clipboard
 from defx.view import View
 from defx.util import Nvim
+
+logger = getLogger(__name__)
+debug = logger.debug
 
 
 class Rplugin:
@@ -23,6 +27,10 @@ class Rplugin:
 
     def start(self, args: typing.List[typing.Any]) -> None:
         [paths, context] = args
+
+        debug("paths: %s", paths)
+        debug("context: %s", context)
+
         views = [x for x in self._views
                  if context['buffer_name'] == x._context.buffer_name]
         if not views or context['new']:

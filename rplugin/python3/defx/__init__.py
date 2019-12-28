@@ -4,10 +4,19 @@
 # License: MIT license
 # ============================================================================
 
+import logging
 import typing
 
 from importlib.util import find_spec
 from defx.rplugin import Rplugin
+
+logger = logging.getLogger(__name__)
+handler = logging.FileHandler("/tmp/defx.log", 'w', 'utf-8')
+handler.formatter = logging.Formatter(
+    '%(asctime)s [%(levelname)s @ '
+    '%(filename)s:%(funcName)s:%(lineno)s] %(process)s - %(message)s')
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
 
 
 if find_spec('yarp'):
@@ -32,6 +41,7 @@ if hasattr(vim, 'plugin'):
 
         @vim.rpc_export('_defx_start', sync=True)  # type: ignore
         def start(self, args: Args) -> None:
+            self._rplugin._vim.command("echo '_defx_start'")
             self._rplugin.start(args)
 
         @vim.rpc_export('_defx_do_action', sync=True)  # type: ignore
