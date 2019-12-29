@@ -1,5 +1,4 @@
-# ============================================================================
-# FILE: view.py
+# ================
 # AUTHOR: Shougo Matsushita <Shougo.Matsu at gmail.com>
 # License: MIT license
 # ============================================================================
@@ -51,6 +50,7 @@ class View(object):
         self._winrestcmd = self._vim.call('winrestcmd')
         self._prev_wininfo = self._get_wininfo()
         self._prev_bufnr = self._context.prev_bufnr
+        debug("self._defxx: %s", self._defxs)
 
         debug("[after]self._context: %s", self._context)
         if not self._init_defx(paths, clipboard):  # 1回めはTrue、2回目はFalse
@@ -144,6 +144,7 @@ class View(object):
         debug("prev: %s", prev)
 
         debug("[before _init_column_length] self._context: %s", self._context)
+        debug("self._defx: %s", self._defxs)
         if is_force:
             self._init_candidates()
             self._init_column_length()
@@ -172,16 +173,23 @@ class View(object):
         self._buffer.options['modifiable'] = False
         self._buffer.options['modified'] = False
 
-        # TODO: How to set cursor position for other buffer when
-        #   stay in current buffer
+        # # TODO: How to set cursor position for other buffer when
+        # #   stay in current buffer
         if self._buffer == self._vim.current.buffer:
+            debug("self._buffer: %s", self._buffer)
+            debug("self._vim.current.buffer: %s", self._vim.current.buffer)
+
+            debug("prev_liner: %s", prev_linenr)
             self._vim.call('cursor', [prev_linenr, 0])
             if prev:
+                debug("prev: %s", prev)
                 self.search_file(prev['action__path'], prev['_defx_index'])
             if is_force:
-                self._init_column_syntax()
+                debug("is_force: %s", is_force)
+                # self._init_column_syntax()  # 外すとsytaxハイライトが消える
 
         if self._context.profile:
+            debug("self._context.profile: %s", self._context.profile)
             error(self._vim, f'redraw time = {time.time() - start}')
 
     def get_cursor_candidate(
@@ -290,13 +298,13 @@ class View(object):
 
         target['is_opened_tree'] = False
 
-        start = pos + 1
+        start = pos + 1.
         base_level = target['level']
         end = start
         for candidate in self._candidates[start:]:
             if candidate['level'] <= base_level:
                 break
-            end += 1
+            end += 1.
 
         self._candidates = (self._candidates[: start] +
                             self._candidates[end:])
@@ -416,18 +424,20 @@ class View(object):
         self._init_columns(self._context.columns.split(':'))
         debug("[after]self._columns: %s", self._columns)
 
+        debug("defxs: %s", self._defxs) # 存在確認
         self.redraw(True)
 
-        # if self._context.session_file:
-        #     self.do_action('load_session', [],
-        #                    self._vim.call('defx#init#_context', {}))
-        #     for [index, path] in enumerate(paths):
-        #         self._check_session(index, path)
+        debug("self._context.session_file: %s", self._context.session_file)
+        if self._context.session_file:
+            self.do_action('load_session', [],
+                           self._vim.call('defx#init#_context', {}))
+            for [index, path] in enumerate(paths):
+                self._check_session(index, path)
 
-        # for defx in self._defxs:
-        #     self._init_cursor(defx)
+        for defx in self._defxs:
+            self._init_cursor(defx)
 
-        # self._vim.vars['defx#_drives'] = self._context.drives
+        self._vim.vars['defx#_drives'] = self._context.drives
 
         return True
 
@@ -588,6 +598,7 @@ class View(object):
     def _init_column_syntax(self) -> None:
         commands: typing.List[str] = []
 
+        debug("self._prev_syntaxes: %s", self._prev_syntaxes)
         for syntax in self._prev_syntaxes:
             commands.append(
                 'silent! syntax clear ' + syntax)
@@ -595,6 +606,7 @@ class View(object):
         self._prev_syntaxes = []
         for column in self._columns:
             source_highlights = column.highlight_commands()
+            debug("source_highlights: %s", source_highlights)
             if source_highlights:
                 if (not column.is_within_variable and
                         column.start > 0 and column.end > 0):
@@ -606,24 +618,33 @@ class View(object):
 
                 commands += source_highlights
                 self._prev_syntaxes += column.syntaxes()
+                debug("self._prev_syntaxes: %s", self._prev_syntaxes)
+
 
         syntax_list = commands + [self._vim.call('execute', 'syntax list')]
+        debug("syntax_list: %s", syntax_list)
         if syntax_list == self._prev_highlight_commands:
             # Skip highlights
             return
 
+        debug("commands: %s", commands)
         self._execute_commands(commands)
         self._prev_highlight_commands = commands + [
             self._vim.call('execute', 'syntax list')]
+        debug("self._prev_highlight_commands: %s", self._prev_highlight_commands)
+        debug("self._prev_syntaxes: %s", self._prev_syntaxes)
 
     def _execute_commands(self, commands: typing.List[str]) -> None:
+        debug("_execute_commands: %s", ' | '.join(commands))
         self._vim.command(' | '.join(commands))
 
     def _init_candidates(self) -> None:
         self._candidates = []
         debug("self._defxs: %s", self._defxs)
+        debug("len(self._defxs): %s", len(self._defxs))
 
         for defx in self._defxs:
+            debug("defx:", vars(defx))
             root = defx.get_root_candidate()
             debug("root: %s", root)
             defx._mtime = root['action__path'].stat().st_mtime
