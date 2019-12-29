@@ -33,11 +33,16 @@ class Rplugin:
 
         views = [x for x in self._views
                  if context['buffer_name'] == x._context.buffer_name]
+        debug("views: %s", views)  # 初回起動時は空っぽ
+        debug("context[new]: %s", context['new'])  # 初回起動時はFlase
         if not views or context['new']:
+            debug("[before]self._views: %s", self._views)
             view = View(self._vim, len(self._views))
+            debug("view: %s", view)
             views = [view]
             self._views.append(view)
-        views[0].init(paths, context, self._clipboard)
+        debug("[after]self._views: %s", self._views)
+        views[0].init(paths, context, self._clipboard)  # 冗長さ意図
 
     def do_action(self, args: typing.List[typing.Any]) -> None:
         views = [x for x in self._views

@@ -16,6 +16,10 @@ from defx.context import Context
 from defx.defx import Defx
 from defx.session import Session
 from defx.util import error, import_plugin, safe_call, Nvim
+from logging import getLogger
+
+logger = getLogger(__name__)
+debug = logger.debug
 
 
 class View(object):
@@ -48,13 +52,16 @@ class View(object):
         self._prev_wininfo = self._get_wininfo()
         self._prev_bufnr = self._context.prev_bufnr
 
-        if not self._init_defx(paths, clipboard):
+        if not self._init_defx(paths, clipboard):  # 1回めはTrue、2回目はFalse
             # Skipped initialize
-            self._winid = self._vim.call('win_getid')
-            if paths and self._vim.call('bufnr', '%') == self._bufnr:
-                self._update_defx(paths)
-            self._init_columns(self._context.columns.split(':'))
-            self.redraw(True)
+            print("comment out")
+            # self._winid = self._vim.call('win_getid')
+            # debug("self._bufnr: %s", self._bufnr)
+            # if paths and self._vim.call('bufnr', '%') == self._bufnr:
+            #     debug("paths:%s", paths)
+            #     self._update_defx(paths)
+            # self._init_columns(self._context.columns.split(':'))
+            # self.redraw(True)
 
     def do_action(self, action_name: str,
                   action_args: typing.List[str],
@@ -324,91 +331,94 @@ class View(object):
         if not self._switch_buffer():
             return False
 
-        self._buffer = self._vim.current.buffer
-        self._bufnr = self._buffer.number
-        self._winid = self._vim.call('win_getid')
+        # self._buffer = self._vim.current.buffer
+        # self._bufnr = self._buffer.number
+        # self._winid = self._vim.call('win_getid')
 
         # Note: Have to use setlocal instead of "current.window.options"
         # "current.window.options" changes global value instead of local in
         # neovim.
-        self._vim.command('setlocal colorcolumn=')
-        self._vim.command('setlocal conceallevel=2')
-        self._vim.command('setlocal concealcursor=nc')
-        self._vim.command('setlocal nocursorcolumn')
-        self._vim.command('setlocal nofoldenable')
-        self._vim.command('setlocal foldcolumn=0')
-        self._vim.command('setlocal nolist')
-        self._vim.command('setlocal nonumber')
-        self._vim.command('setlocal norelativenumber')
-        self._vim.command('setlocal nospell')
-        self._vim.command('setlocal nowrap')
-        self._vim.command('setlocal signcolumn=no')
-        if self._context.split == 'floating':
-            self._vim.command('setlocal nocursorline')
+        # self._vim.command('setlocal colorcolumn=')
+        # self._vim.command('setlocal conceallevel=2')
+        # self._vim.command('setlocal concealcursor=nc')
+        # self._vim.command('setlocal nocursorcolumn')
+        # self._vim.command('setlocal nofoldenable')
+        # self._vim.command('setlocal foldcolumn=0')
+        # self._vim.command('setlocal nolist')
+        # self._vim.command('setlocal nonumber')
+        # self._vim.command('setlocal norelativenumber')
+        # self._vim.command('setlocal nospell')
+        # self._vim.command('setlocal nowrap')
+        # self._vim.command('setlocal signcolumn=no')
+        # if self._context.split == 'floating':
+        #     self._vim.command('setlocal nocursorline')
 
-        self._resize_window()
+        # self._resize_window()
 
-        buffer_options = self._buffer.options
-        buffer_options['buftype'] = 'nofile'
-        buffer_options['bufhidden'] = 'hide'
-        buffer_options['swapfile'] = False
-        buffer_options['modeline'] = False
-        buffer_options['filetype'] = 'defx'
-        buffer_options['modifiable'] = False
-        buffer_options['modified'] = False
+        # buffer_options = self._buffer.options
+        # buffer_options['buftype'] = 'nofile'
+        # buffer_options['bufhidden'] = 'hide'
+        # buffer_options['swapfile'] = False
+        # buffer_options['modeline'] = False
+        # buffer_options['filetype'] = 'defx'
+        # buffer_options['modifiable'] = False
+        # buffer_options['modified'] = False
 
-        if not paths:
-            paths = [self._vim.call('getcwd')]
+        # if not paths:
+        #     paths = [self._vim.call('getcwd')]
 
-        self._buffer.vars['defx'] = {
-            'context': self._context._asdict(),
-            'paths': paths,
-        }
+        # self._buffer.vars['defx'] = {
+        #     'context': self._context._asdict(),
+        #     'paths': paths,
+        # }
 
-        if not self._context.listed:
-            buffer_options['buflisted'] = False
+        # if not self._context.listed:
+        #     buffer_options['buflisted'] = False
 
-        self._execute_commands([
-            'silent doautocmd FileType defx',
-            'autocmd! defx * <buffer>',
-        ])
-        self._vim.command('autocmd defx '
-                          'CursorHold,FocusGained <buffer> '
-                          'call defx#call_async_action("check_redraw")')
-        self._vim.command('autocmd defx FileType <buffer> '
-                          'call defx#call_action("redraw")')
+        # self._execute_commands([
+        #     'silent doautocmd FileType defx',
+        #     'autocmd! defx * <buffer>',
+        # ])
+        # self._vim.command('autocmd defx '
+        #                   'CursorHold,FocusGained <buffer> '
+        #                   'call defx#call_async_action("check_redraw")')
+        # self._vim.command('autocmd defx FileType <buffer> '
+        #                   'call defx#call_action("redraw")')
 
-        self._prev_highlight_commands = []
+        # self._prev_highlight_commands = []
 
-        # Initialize defx state
-        self._candidates = []
-        self._clipboard = clipboard
-        self._defxs = []
-        self._update_defx(paths)
+        # # Initialize defx state
+        # self._candidates = []
+        # self._clipboard = clipboard
+        # self._defxs = []
+        # self._update_defx(paths)
 
-        self._init_all_columns()
-        self._init_columns(self._context.columns.split(':'))
+        # self._init_all_columns()
+        # self._init_columns(self._context.columns.split(':'))
 
-        self.redraw(True)
+        # self.redraw(True)
 
-        if self._context.session_file:
-            self.do_action('load_session', [],
-                           self._vim.call('defx#init#_context', {}))
-            for [index, path] in enumerate(paths):
-                self._check_session(index, path)
+        # if self._context.session_file:
+        #     self.do_action('load_session', [],
+        #                    self._vim.call('defx#init#_context', {}))
+        #     for [index, path] in enumerate(paths):
+        #         self._check_session(index, path)
 
-        for defx in self._defxs:
-            self._init_cursor(defx)
+        # for defx in self._defxs:
+        #     self._init_cursor(defx)
 
-        self._vim.vars['defx#_drives'] = self._context.drives
+        # self._vim.vars['defx#_drives'] = self._context.drives
 
         return True
 
     def _switch_buffer(self) -> bool:
+        debug("self._context: %s", self._context)
         if self._context.split == 'tab':
             self._vim.command('tabnew')
 
-        winnr = self._vim.call('bufwinnr', self._bufnr)
+        debug("self._bufnr: %s", self._bufnr)  # 初回は-1
+
+        winnr = self._vim.call('bufwinnr', self._bufnr)  # bufnrからwinnrを引くが、-1なので-1
         if winnr > 0:
             self._vim.command(f'{winnr}wincmd w')
             if self._context.toggle:
@@ -422,6 +432,7 @@ class View(object):
                 self._context.split == 'no'):
             self._context = self._context._replace(split='vertical')
 
+        debug("self._context: %s", self._context)
         if (self._context.split == 'floating'
                 and self._vim.call('exists', '*nvim_open_win')):
             # Use floating window
@@ -438,6 +449,9 @@ class View(object):
         # Create new buffer
         vertical = 'vertical' if self._context.split == 'vertical' else ''
         no_split = self._context.split in ['no', 'tab', 'floating']
+        debug("no_split: %s", no_split)
+        debug("check buf loaded: %s", self._vim.call('bufloaded', self._bufnr))  # 初回は0
+
         if self._vim.call('bufloaded', self._bufnr):
             command = ('buffer' if no_split else 'sbuffer')
             self._vim.command(
@@ -464,6 +478,13 @@ class View(object):
             )
         else:
             command = ('edit' if no_split else 'new')
+
+            debug("self._context.direction: %s", self._context.direction)
+            debug("vertical: %s", vertical)
+            debug("command: %s", command)
+            debug("self._bufnr: %s", self._bufnr)
+            debug("self._bufnr: %s", self._bufname)
+
             self._vim.call(
                 'defx#util#execute_path',
                 'silent keepalt %s %s %s ' % (
@@ -478,20 +499,24 @@ class View(object):
         self._all_columns: typing.Dict[str, Column] = {}
 
         for path_column in self._load_custom_columns():
+            # 動的にモジュールをimport
             column = import_plugin(path_column, 'column', 'Column')
             if not column:
                 continue
 
             column = column(self._vim)
+            debug("column:%s", type(column))
             if column.name not in self._all_columns:
                 self._all_columns[column.name] = column
 
     def _init_columns(self, columns: typing.List[str]) -> None:
         custom = self._vim.call('defx#custom#_get')['column']
+        debug("custom: %s", custom)
         self._columns: typing.List[Column] = [
             copy.copy(self._all_columns[x])
             for x in columns if x in self._all_columns
         ]
+        debug("self._columns: %s", self._columns)
         for column in self._columns:
             if column.name in custom:
                 column.vars.update(custom[column.name])
@@ -638,6 +663,7 @@ class View(object):
                 'rplugin', 'python3', 'defx', 'column')
             if safe_call(column_path.is_dir):
                 result += column_path.glob('*.py')
+        debug("result: %s", result)
 
         return result
 
