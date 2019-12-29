@@ -46,12 +46,13 @@ class View(object):
              context: typing.Dict[str, typing.Any],
              clipboard: Clipboard
              ) -> None:
-        self._context = self._init_context(context)
+        self._context = self._init_context(context) # context.coulumnはここでcontextとマッピングされている
         self._bufname = f'[defx] {self._context.buffer_name}-{self._index}'
         self._winrestcmd = self._vim.call('winrestcmd')
         self._prev_wininfo = self._get_wininfo()
         self._prev_bufnr = self._context.prev_bufnr
 
+        debug("[after]self._context: %s", self._context)
         if not self._init_defx(paths, clipboard):  # 1回めはTrue、2回目はFalse
             # Skipped initialize
             print("comment out")
@@ -138,19 +139,25 @@ class View(object):
 
         [info] = self._vim.call('getbufinfo', self._bufnr)
         prev_linenr = info['lnum']
+        debug("prev_linenr: %s", prev_linenr)
         prev = self.get_cursor_candidate(prev_linenr)
+        debug("prev: %s", prev)
 
+        debug("[before _init_column_length] self._context: %s", self._context)
         if is_force:
             self._init_candidates()
             self._init_column_length()
+        debug("self._candidates: %s", self._candidates)
+        debug("[after _init_column_length] self._context: %s", self._context)
 
         for column in self._columns:
-            column.on_redraw(self._context)
+            column.on_redraw(self._context) # ?
 
         lines = [
             self._get_columns_text(self._context, x)
             for x in self._candidates
         ]
+        debug("lines: %s", lines)
 
         self._buffer.options['modifiable'] = True
 
@@ -304,10 +311,11 @@ class View(object):
         return Context(**context)
 
     def _resize_window(self) -> None:
-        window_options = self._vim.current.window.options
+        window_options = self._vim.current.window.options  # 参照渡し!
+        debug("self._context.split: %s", self._context.split)
         if (self._context.split == 'vertical'
                 and self._context.winwidth > 0):
-            window_options['winfixwidth'] = True
+            window_options['winfixwidth'] = True  # 参照渡しなので、これで設定反映
             self._vim.command(f'vertical resize {self._context.winwidth}')
         elif (self._context.split == 'horizontal' and
               self._context.winheight > 0):
@@ -331,72 +339,84 @@ class View(object):
         if not self._switch_buffer():
             return False
 
-        # self._buffer = self._vim.current.buffer
-        # self._bufnr = self._buffer.number
-        # self._winid = self._vim.call('win_getid')
+        # _switch_bufferで新しくバッファを作成したので、現在のオブジェクトもそれに合わせ更新?
+        self._buffer = self._vim.current.buffer
+        self._bufnr = self._buffer.number
+        self._winid = self._vim.call('win_getid')
 
         # Note: Have to use setlocal instead of "current.window.options"
         # "current.window.options" changes global value instead of local in
-        # neovim.
-        # self._vim.command('setlocal colorcolumn=')
-        # self._vim.command('setlocal conceallevel=2')
-        # self._vim.command('setlocal concealcursor=nc')
-        # self._vim.command('setlocal nocursorcolumn')
-        # self._vim.command('setlocal nofoldenable')
-        # self._vim.command('setlocal foldcolumn=0')
-        # self._vim.command('setlocal nolist')
-        # self._vim.command('setlocal nonumber')
-        # self._vim.command('setlocal norelativenumber')
-        # self._vim.command('setlocal nospell')
-        # self._vim.command('setlocal nowrap')
-        # self._vim.command('setlocal signcolumn=no')
-        # if self._context.split == 'floating':
-        #     self._vim.command('setlocal nocursorline')
 
-        # self._resize_window()
+        self._vim.command('setlocal colorcolumn=')
+        self._vim.command('setlocal conceallevel=2')
+        self._vim.command('setlocal concealcursor=nc')
+        self._vim.command('setlocal nocursorcolumn')
+        self._vim.command('setlocal nofoldenable')
+        self._vim.command('setlocal foldcolumn=0')
+        self._vim.command('setlocal nolist')
+        self._vim.command('setlocal nonumber')
+        self._vim.command('setlocal norelativenumber')
+        self._vim.command('setlocal nospell')
+        self._vim.command('setlocal nowrap')
+        self._vim.command('setlocal signcolumn=no')
+        if self._context.split == 'floating':
+            self._vim.command('setlocal nocursorline')
 
-        # buffer_options = self._buffer.options
-        # buffer_options['buftype'] = 'nofile'
-        # buffer_options['bufhidden'] = 'hide'
-        # buffer_options['swapfile'] = False
-        # buffer_options['modeline'] = False
-        # buffer_options['filetype'] = 'defx'
-        # buffer_options['modifiable'] = False
-        # buffer_options['modified'] = False
+        self._resize_window()
 
-        # if not paths:
-        #     paths = [self._vim.call('getcwd')]
+        debug("[before] self.buffer: %s", self._buffer) # Noneのはずだが..何か見える..どこかで初期化されている..?
+        debug("[before] self.buffer.options: %s", self._buffer.options)
+        buffer_options = self._buffer.options
+        buffer_options['buftype'] = 'nofile'
+        buffer_options['bufhidden'] = 'hide'
+        buffer_options['swapfile'] = False
+        buffer_options['modeline'] = False
+        buffer_options['filetype'] = 'defx'
+        buffer_options['modifiable'] = False
+        buffer_options['modified'] = False
+        debug("[after] self.buffer.options: %s", self._buffer.options)
 
-        # self._buffer.vars['defx'] = {
-        #     'context': self._context._asdict(),
-        #     'paths': paths,
-        # }
+        debug("[before]paths: %s", paths)
+        if not paths:
+            paths = [self._vim.call('getcwd')]
 
-        # if not self._context.listed:
-        #     buffer_options['buflisted'] = False
+        debug("[after]paths: %s", paths)
 
-        # self._execute_commands([
-        #     'silent doautocmd FileType defx',
-        #     'autocmd! defx * <buffer>',
-        # ])
-        # self._vim.command('autocmd defx '
-        #                   'CursorHold,FocusGained <buffer> '
-        #                   'call defx#call_async_action("check_redraw")')
-        # self._vim.command('autocmd defx FileType <buffer> '
-        #                   'call defx#call_action("redraw")')
+        debug("self._context._asdict(): %s", self._context._asdict())
+        # debug("[before]self._buffer.vars['defx']: %s", self._buffer.vars["defx"])
+        self._buffer.vars['defx'] = {
+            'context': self._context._asdict(),
+            'paths': paths,
+        }
+        debug("[after]self._buffer.vars['defx']: %s", self._buffer.vars["defx"])
 
-        # self._prev_highlight_commands = []
+        if not self._context.listed:
+            buffer_options['buflisted'] = False
 
-        # # Initialize defx state
-        # self._candidates = []
-        # self._clipboard = clipboard
-        # self._defxs = []
-        # self._update_defx(paths)
+        self._execute_commands([
+            'silent doautocmd FileType defx',
+            'autocmd! defx * <buffer>', # defxのautocmdを全て削除する
+        ])
+        self._vim.command('autocmd defx '
+                          'CursorHold,FocusGained <buffer> '
+                          'call defx#call_async_action("check_redraw")')
+        self._vim.command('autocmd defx FileType <buffer> '
+                          'call defx#call_action("redraw")')
 
-        # self._init_all_columns()
-        # self._init_columns(self._context.columns.split(':'))
+        self._prev_highlight_commands = []
 
-        # self.redraw(True)
+        # Initialize defx state
+        self._candidates = []
+        self._clipboard = clipboard
+        self._defxs = []
+        self._update_defx(paths)
+
+        self._init_all_columns()
+        # debug("[before]self._columns: %s", self._columns)
+        self._init_columns(self._context.columns.split(':'))
+        debug("[after]self._columns: %s", self._columns)
+
+        self.redraw(True)
 
         # if self._context.session_file:
         #     self.do_action('load_session', [],
@@ -601,14 +621,23 @@ class View(object):
 
     def _init_candidates(self) -> None:
         self._candidates = []
+        debug("self._defxs: %s", self._defxs)
+
         for defx in self._defxs:
             root = defx.get_root_candidate()
+            debug("root: %s", root)
             defx._mtime = root['action__path'].stat().st_mtime
 
             candidates = [root]
+            debug("[before]candidates: %s", candidates)
+            debug("defx._cwd: %s", defx._cwd)
+            debug("self._context.auto_recursive_level: %s", self._context.auto_recursive_level)
+            # defx.tree_candidates('/', 0, 0)
             candidates += defx.tree_candidates(
                 defx._cwd, 0, self._context.auto_recursive_level)
+            debug("[after]candidates: %s", candidates)
             for candidate in candidates:
+                debug("defx._index: %s", defx._index)
                 candidate['_defx_index'] = defx._index
             self._candidates += candidates
 
@@ -616,7 +645,10 @@ class View(object):
                           candidate: typing.Dict[str, typing.Any]) -> str:
         texts: typing.List[str] = []
         variable_texts: typing.List[str] = []
+
+        debug("self._columns: %s", self._columns)
         for column in self._columns:
+            debug("column.name: %s", column.name)
             if column.is_stop_variable:
                 if variable_texts:
                     variable_texts.append('')
@@ -626,12 +658,14 @@ class View(object):
 
                 variable_texts = []
             else:
-                text = column.get(context, candidate)
+                text = column.get(context, candidate) # 各columnオブジェクト参照
+                debug("text: %s", text)
                 if column.is_start_variable or column.is_within_variable:
                     if text:
                         variable_texts.append(text)
                 else:
                     texts.append(text)
+            debug("texts: %s", texts)
         return ' '.join(texts)
 
     def _update_paths(self, index: int, path: str) -> None:

@@ -10,6 +10,10 @@ import typing
 from defx.base.source import Base
 from defx.context import Context
 from defx.util import error, readable, safe_call, Nvim
+from logging import getLogger
+
+logger = getLogger(__name__)
+debug = logger.debug
 
 
 class Source(Base):
@@ -52,6 +56,8 @@ class Source(Base):
             error(self.vim, f'"{path}" is not readable directory.')
             return []
         for entry in path.iterdir():
+            debug("entry: %s", entry)
+
             candidates.append({
                 'word': entry.name.replace('\n', '\\n') + (
                     '/' if safe_call(entry.is_dir, False) else ''),

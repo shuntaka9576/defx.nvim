@@ -12,7 +12,10 @@ from defx.sort import sort
 from defx.util import Nvim
 from defx.util import cd, error
 from pathlib import Path
+from logging import getLogger
 
+logger = getLogger(__name__)
+debug = logger.debug
 
 Candidate = typing.Dict[str, typing.Any]
 
@@ -70,6 +73,8 @@ class Defx(object):
         gathered_candidates = self.gather_candidates_recursive(
             path, base_level, max_level)
 
+        debug("gathered_candidates: %s", gathered_candidates)
+        debug("self._opened_candidates: %s", self._opened_candidates)
         if self._opened_candidates:
             candidates = []
             for candidate in gathered_candidates:
@@ -92,6 +97,8 @@ class Defx(object):
     ) -> typing.List[Candidate]:
 
         candidates = self._gather_candidates(path, base_level)
+        debug("candidates: %s", candidates)
+
         if base_level >= max_level:
             return candidates
 
@@ -102,6 +109,7 @@ class Defx(object):
                 candidate['is_opened_tree'] = True
                 ret += self.gather_candidates_recursive(
                     str(candidate['action__path']), base_level + 1, max_level)
+        debug("ret: %s", ret)
         return ret
 
     def _gather_candidates(
